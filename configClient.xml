@@ -1,0 +1,8 @@
+<client>
+	<nip>192.168.1.10</nip>
+	<bip>bknode1IP</bip>
+	<executables>
+		<file>node1execute1</file>
+	</executables>
+
+</client>

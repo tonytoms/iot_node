@@ -12,5 +12,9 @@ def createOrReplace(path):
         shutil.rmtree(path)
     os.mkdir(path)
         
-
+def checkExistOrCreate(path):
+    if os.path.isdir(path):
+        return True
+    else:
+        os.mkdir(path)
     

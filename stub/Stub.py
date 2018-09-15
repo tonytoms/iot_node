@@ -8,8 +8,9 @@ import Pyro4
 import xml.etree.ElementTree as ElementTree
 import utilities.Utilities as utilities
 import zipfile
-import threading
+import shutil
 import subprocess
+import socket
 
 def getNIP():    
     tree = ElementTree.parse("..\configClient.xml")  
@@ -35,12 +36,14 @@ class stubClass(object):
         self.version = getBNIP()
         self.executables=getExecutables()
         self.sub_processes={}
+    '''
     def update(self,zip_ref):
         utilities.checkExistOrCreate("../files")
         zip_ref.extractall("../files")
         zip_ref.close()
         return True
-    def killExecutor(self):
+    '''
+    def stopNodeExecution(self):
         executables=getExecutables()
 
         try:
@@ -52,7 +55,7 @@ class stubClass(object):
                     continue
         except:
             raise 
-    def executor(self):
+    def startNodeExecution(self):
         executables=getExecutables()
         
         for i in range(len(executables)):
@@ -61,6 +64,33 @@ class stubClass(object):
             else:
                 sub_process = subprocess.Popen(['python', "../files/"+executables[i]])
                 self.sub_processes[executables[i]]=sub_process
+    def startNodeFileReceiver(self,nodeip):
+        HOST = nodeip
+        PORT = 5051
+        ADDR = (HOST,PORT)
+        BUFSIZE = 4096
+        serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serv.bind(ADDR)
+        serv.listen(5)
+        #while True:
+        conn, addr = serv.accept()
+        utilities.createOrReplace('../temp/receivedFile.zip')
+        myfile = open('../temp/receivedFile.zip', 'w')
+        while True:
+            data = conn.recv(BUFSIZE)
+            if not data: break
+            myfile.write(data.decode())
+        myfile.close()
+        conn.close()
+        
+        
+    def loaderNode(self):
+
+        utilities.createOrReplace("../files" )
+        zip_ref = zipfile.ZipFile("../temp/receivedFile.zip", 'r')
+        zip_ref.extractall("../files")
+        zip_ref.close()
+
 
     def test(self):
         print(getNIP())

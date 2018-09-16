@@ -11,6 +11,7 @@ import zipfile
 import shutil
 import subprocess
 import socket
+import os
 
 def getNIP():    
     tree = ElementTree.parse("..\configClient.xml")  
@@ -89,6 +90,8 @@ class stubClass(object):
         utilities.createOrReplace("../files" )
         zip_ref = zipfile.ZipFile("../temp/receivedFile.zip", 'r')
         zip_ref.extractall("../files")
+        shutil.copyfile('../files/configClient.xml', '../configClient.xml')
+        os.remove('../files/configClient.xml')  
         zip_ref.close()
 
 

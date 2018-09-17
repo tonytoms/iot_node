@@ -3,7 +3,8 @@ Created on Sep 12, 2018
 
 @author: Default
 '''
-
+import sys
+sys.path.append("../")
 import Pyro4
 import xml.etree.ElementTree as ElementTree
 import utilities.Utilities as utilities
@@ -12,20 +13,21 @@ import shutil
 import subprocess
 import socket
 import os
+from threading import Thread
 
 def getNIP():    
     tree = ElementTree.parse("..\configClient.xml")  
     root = tree.getroot()
-    return(root[0].text)
+    return(root[0][0].text)
 def getBNIP():    
     tree = ElementTree.parse("..\configClient.xml")  
     root = tree.getroot()
-    return(root[1].text)
+    return(root[0][1].text)
 def getExecutables():    
     tree = ElementTree.parse("..\configClient.xml")  
     root = tree.getroot()
     executables=[]
-    for child in root[2]:
+    for child in root[0][2]:
         executables.append(child.text)
         
     return(executables)
@@ -34,7 +36,7 @@ def getExecutables():
 class stubClass(object):
     def __init__(self):
         self.ip = getNIP()
-        self.version = getBNIP()
+        self.bip = getBNIP()
         self.executables=getExecutables()
         self.sub_processes={}
     '''
@@ -63,36 +65,42 @@ class stubClass(object):
             if executables[i] in self.sub_processes:
                 continue
             else:
-                sub_process = subprocess.Popen(['python', "../files/"+executables[i]])
-                self.sub_processes[executables[i]]=sub_process
-    def startNodeFileReceiver(self,nodeip):
-        HOST = nodeip
-        PORT = 5051
-        ADDR = (HOST,PORT)
-        BUFSIZE = 4096
-        serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        serv.bind(ADDR)
-        serv.listen(5)
-        #while True:
-        conn, addr = serv.accept()
-        utilities.createOrReplace('../temp/receivedFile.zip')
-        myfile = open('../temp/receivedFile.zip', 'w')
-        while True:
-            data = conn.recv(BUFSIZE)
-            if not data: break
-            myfile.write(data.decode())
-        myfile.close()
-        conn.close()
+                if os.path.isfile("../files/"+executables[i]):
+                    sub_process = subprocess.Popen(['python', "../files/"+executables[i]])
+                    self.sub_processes[executables[i]]=sub_process
+    def startNodeFileReceiver(self,nodeip,filesizeinp):
+        host = nodeip
+        port = 5051
+        filesize=int(filesizeinp)
+        s = socket.socket()
+        s.connect((host, port))
+        utilities.createOrReplace("../receiveFolder" )
+
+        f = open('../receiveFolder/receivedFile.zip', 'wb')
+        data = s.recv(1024)
+        totalRecv = len(data)
+        f.write(data)
+        while totalRecv < filesize:
+            data = s.recv(1024)
+            totalRecv += len(data)
+            f.write(data)
+            print ("{0:.2f}".format((totalRecv/float(filesize))*100)+ "% Done")
+        print ("Download Complete!")
+        f.close()
         
         
     def loaderNode(self):
 
-        utilities.createOrReplace("../files" )
-        zip_ref = zipfile.ZipFile("../temp/receivedFile.zip", 'r')
-        zip_ref.extractall("../files")
-        shutil.copyfile('../files/configClient.xml', '../configClient.xml')
-        os.remove('../files/configClient.xml')  
+        utilities.createOrReplace("../temp" )
+        zip_ref = zipfile.ZipFile("../receiveFolder/receivedFile.zip", 'r')
+        zip_ref.extractall("../temp")
         zip_ref.close()
+
+        shutil.rmtree("../files")
+
+        shutil.copytree("../temp","../files" )
+        shutil.move('../files/configClient.xml','../configClient.xml')
+ 
 
 
     def test(self):

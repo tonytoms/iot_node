@@ -1,8 +1,1 @@
-<node>
-	<nip>192.168.1.10</nip>
-	<bip>bknode1IP</bip>
-	<executables>
-		<file>test1.py</file>
-	</executables>
-
-</node>
+<client><node><nip>192.168.1.5</nip><nbip>192.168.1.2</nbip><executables><file>a.py</file></executables></node></client>
